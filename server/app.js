@@ -28,6 +28,17 @@ const order = (row, internal=false) => ({id:row.id,userId:row.user_id,name:row.c
 const audit = (db,actor,action,id,detail={})=>db.query('INSERT INTO audit_log(id,actor_id,action,entity_id,detail) VALUES ($1,$2,$3,$4,$5)',[randomUUID(),actor,action,id,JSON.stringify(detail)]);
 async function bodyJson(req) {
   if(!req.headers['content-type']?.startsWith('application/json'))fail(415,'Se requiere JSON.');
+  // Vercel /api functions can supply an already parsed body instead of a stream.
+  if(req.body!==undefined){
+    let value=req.body;
+    if(typeof value==='string'||Buffer.isBuffer(value)){
+      if(Buffer.byteLength(value)>3*1024*1024)fail(413,'El archivo o solicitud es demasiado grande.');
+      try{value=JSON.parse(value.toString());}catch{fail(400,'Solicitud JSON inválida.');}
+    }
+    if(!value||typeof value!=='object'||Array.isArray(value))fail(400,'Solicitud inválida.');
+    if(Buffer.byteLength(JSON.stringify(value))>3*1024*1024)fail(413,'El archivo o solicitud es demasiado grande.');
+    return value;
+  }
   let bytes=0;const parts=[];
   for await(const chunk of req){bytes+=chunk.length;if(bytes>3*1024*1024)fail(413,'El archivo o solicitud es demasiado grande.');parts.push(chunk);}
   try { const value=JSON.parse(Buffer.concat(parts).toString()); if(!value||typeof value!=='object'||Array.isArray(value))fail(400,'Solicitud inválida.');return value; } catch {fail(400,'Solicitud JSON inválida.');}
@@ -200,5 +211,5 @@ export async function createApp(options={}) {
     }catch(e){if(e.status)return send(e.status,{error:e.message});console.error('Request failed:',e.code||e.name);return send(500,{error:'No pudimos completar la operación. Intentá nuevamente.'});}
   }
   const server=http.createServer(handle);server.requestTimeout=30000;server.headersTimeout=15000;
-  return {server,db,close:async()=>{await new Promise(r=>server.close(r));await db.close();}};
+  return {handle,server,db,close:async()=>{if(server.listening)await new Promise(r=>server.close(r));await db.close();}};
 }

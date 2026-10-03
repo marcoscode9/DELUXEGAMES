@@ -50,9 +50,9 @@ La conexión directa requiere IPv6 o el complemento IPv4 de Supabase. Si tu red 
 
 ## Desplegar en Vercel
 
-La entrada `server.js` y `vercel.json` configuran el backend HTTP completo en Vercel con Node 24 y Fluid Compute. Se incluyen SQL, catálogo, HTML, CSS, módulos y recursos en la función. La carpeta privada `.local` y los `.env` quedan fuera del despliegue. Las conexiones PostgreSQL se reutilizan con un pool de hasta cinco conexiones y el helper oficial `attachDatabasePool`.
+La función `api/index.js` y `vercel.json` configuran el backend HTTP completo en Vercel con Node 24 y Fluid Compute. Todas las rutas pasan por esa función, que responde el HTML, recursos y APIs conservando las rutas originales. Se incluyen SQL, catálogo, HTML, CSS, módulos y recursos en la función. La carpeta privada `.local` y los `.env` quedan fuera del despliegue. Las conexiones PostgreSQL se reutilizan con un pool de hasta cinco conexiones y el helper oficial `attachDatabasePool`. La inicialización ocurre con la primera solicitud y se comparte entre solicitudes simultáneas; no se abre un puerto HTTP en Vercel.
 
-Desplegá el commit más reciente de `fase-2-componentes` **como Production**. Redeploy de un deployment viejo vuelve a construir el commit de ese deployment: no incorpora automáticamente commits locales o de otra rama. El commit debe estar en GitHub antes de seleccionarlo en Vercel. El framework Node y la instalación están definidos en `vercel.json`; desactivá cualquier override anterior de Output Directory para que no se publique solo el HTML estático.
+Desplegá el commit más reciente de `fase-2-componentes` **como Production**. Redeploy de un deployment viejo vuelve a construir el commit de ese deployment: no incorpora automáticamente commits locales o de otra rama. El commit debe estar en GitHub antes de seleccionarlo en Vercel. El preset **Other** (`framework: null`) y la instalación están definidos en `vercel.json`; desactivá cualquier override anterior de Output Directory para que no se publique solo el HTML estático. El patrón en `functions` apunta a `api/index.js`, un archivo real dentro de `api`.
 
 En **Settings → Environment Variables**, para Production:
 
@@ -72,7 +72,7 @@ El administrador de Docker no existe automáticamente en una base Supabase nueva
 
 Antes de dar el despliegue por validado, verificá `/api/products`, `/admin` y el login. La conectividad y el certificado reales de Supabase necesitan comprobarse en el primer despliegue; las pruebas locales usan una base separada.
 
-Referencias: [servidores Node en Vercel](https://vercel.com/docs/functions/runtimes/node-js#deploy-a-nodejs-server), [pool de conexiones en Fluid Compute](https://vercel.com/kb/guide/connection-pooling-with-functions).
+Referencias: [funciones Node en Vercel](https://vercel.com/docs/functions/runtimes/node-js#create-a-nodejs-function-in-api), [pool de conexiones en Fluid Compute](https://vercel.com/kb/guide/connection-pooling-with-functions).
 
 ## Operaciones
 

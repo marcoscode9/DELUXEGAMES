@@ -2,6 +2,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {once} from 'node:events';
+import http from 'node:http';
+import {readFile} from 'node:fs/promises';
 import pg from 'pg';
 import {createDatabase} from '../server/db.js';
 
@@ -22,24 +24,45 @@ test('concurrent cold starts create the schema once and preserve catalog edits',
   }finally{await a.close();await b.close();await removeSchema(schema);}
 });
 
-test('Vercel root entrypoint initializes a fresh database and serves storefront, assets and APIs',{timeout:30000},async()=>{
+test('Vercel API entrypoint initializes once and serves storefront, assets and streamed or parsed JSON',{timeout:30000},async()=>{
   const schema='vercel_'+randomUUID().replaceAll('-','');
   const keys=['SUPABASE_DATABASE_URL','SUPABASE_DB_PASSWORD','DATABASE_SCHEMA','PORT','APP_URL','VERCEL','VERCEL_ENV'];
-  const saved=new Map(keys.map(key=>[key,process.env[key]]));let app;
+  const saved=new Map(keys.map(key=>[key,process.env[key]]));let app,server;
   try{
     process.env.SUPABASE_DATABASE_URL='';process.env.SUPABASE_DB_PASSWORD='';process.env.DATABASE_SCHEMA=schema;
     process.env.PORT='0';process.env.APP_URL='http://localhost';process.env.VERCEL='1';process.env.VERCEL_ENV='production';
-    ({app}=await import('../server.js'));
-    if(!app.server.listening)await once(app.server,'listening');
-    const base=`http://127.0.0.1:${app.server.address().port}`;
+    const config=JSON.parse(await readFile(new URL('../vercel.json',import.meta.url),'utf8'));
+    assert.equal(config.framework,null);
+    for(const entry of Object.keys(config.functions))await readFile(new URL('../'+entry,import.meta.url));
+    assert.deepEqual(config.routes,[{src:'/(.*)',dest:'/api/index.js'}]);
+    const {default:handler,getApp}=await import('../api/index.js');
+    // Emulate Vercel's JSON helper for requests to /api/login only.
+    server=http.createServer(async(req,res)=>{
+      if(req.url==='/api/login'){
+        const chunks=[];for await(const chunk of req)chunks.push(chunk);
+        req.body=JSON.parse(Buffer.concat(chunks).toString());
+      }
+      await handler(req,res);
+    });
+    server.listen(0,'127.0.0.1');await once(server,'listening');
+    const base=`http://127.0.0.1:${server.address().port}`;
+    const [home,catalog]=await Promise.all([fetch(base),fetch(base+'/api/products')]);
+    const [firstApp,secondApp]=await Promise.all([getApp(),getApp()]);app=firstApp;
+    assert.equal(firstApp,secondApp);assert.equal(app.server.listening,false);
     assert.equal(app.db.pool.options.max,5);assert.equal(app.db.pool.options.idleTimeoutMillis,5000);
-    const html=await (await fetch(base)).text();assert.ok(html.includes('God of War Ragnarök'));assert.ok(html.includes('/js/app.js?v='));
-    assert.equal((await (await fetch(base+'/api/products')).json()).products.length,5);
+    const html=await home.text();assert.ok(html.includes('God of War Ragnarök'));assert.ok(html.includes('/js/app.js?v='));
+    assert.equal((await catalog.json()).products.length,5);
     for(const path of ['/admin','/cuenta','/assets/deluxegames-mark.svg','/assets/fonts/nunito-latin-variable.woff2','/css/nebula.css','/js/app.js','/gta5.webp'])assert.equal((await fetch(base+path)).status,200,path);
     const signup=await fetch(base+'/api/register',{method:'POST',headers:{Origin:'http://localhost','Content-Type':'application/json'},body:JSON.stringify({name:'Vercel test',email:'vercel@entrypoint.local',password:'Vercel-test-password-1234'})});
     assert.equal(signup.status,201);assert.equal((await signup.json()).user.role,'customer');
-    assert.equal((await fetch(base+'/.env')).status,404);
+    const headers={Origin:'http://localhost','Content-Type':'application/json'};
+    const login=await fetch(base+'/api/login',{method:'POST',headers,body:JSON.stringify({email:'vercel@entrypoint.local',password:'Vercel-test-password-1234'})});
+    assert.equal(login.status,200);assert.equal((await login.json()).user.role,'customer');
+    for(const body of [null,[],42])assert.equal((await fetch(base+'/api/login',{method:'POST',headers,body:JSON.stringify(body)})).status,400);
+    assert.equal((await fetch(base+'/api/login',{method:'POST',headers,body:JSON.stringify({padding:'a'.repeat(3*1024*1024)})})).status,413);
+    for(const path of ['/.env','/server/app.js','/index.html','/vercel.json'])assert.equal((await fetch(base+path)).status,404,path);
   }finally{
+    if(server?.listening)await new Promise(resolve=>server.close(resolve));
     await app?.close();await removeSchema(schema);
     for(const [key,value]of saved){if(value===undefined)delete process.env[key];else process.env[key]=value;}
   }
