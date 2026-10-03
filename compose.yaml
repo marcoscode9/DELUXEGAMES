@@ -10,6 +10,12 @@ services:
       HOST: 0.0.0.0
       APP_URL: ${APP_URL:-http://localhost:3000}
       DATABASE_URL: postgresql://deluxegames:${POSTGRES_PASSWORD}@db:5432/deluxegames
+      SUPABASE_DATABASE_URL: ${SUPABASE_DATABASE_URL:-}
+      SUPABASE_DB_PASSWORD: ${SUPABASE_DB_PASSWORD:-}
+      SUPABASE_DATABASE_SCHEMA: ${SUPABASE_DATABASE_SCHEMA:-deluxegames}
+      SUPABASE_SSL_CA_FILE: ${SUPABASE_SSL_CA_FILE:-}
+    volumes:
+      - ./.local/certs:/app/.local/certs:ro
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:

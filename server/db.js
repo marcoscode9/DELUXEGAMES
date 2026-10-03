@@ -1,10 +1,10 @@
 import pg from 'pg';
 import { readFile } from 'node:fs/promises';
 
-export function createDatabase(connectionString, schema = 'public') {
+export function createDatabase(connectionString, schema = 'public', ssl) {
   if (!connectionString) throw new Error('Falta DATABASE_URL. Ejecutá npm run local:setup.');
   if (!/^[a-z][a-z0-9_]*$/.test(schema)) throw new Error('Invalid database schema');
-  const pool = new pg.Pool({ connectionString, max: 10, options: `-c search_path=${schema},public` });
+  const pool = new pg.Pool({ connectionString, max: 10, connectionTimeoutMillis:10000, options: `-c search_path=${schema}`, ...(ssl?{ssl}:{}) });
   const query = (sql, values) => pool.query(sql, values);
   const tx = async work => {
     const client = await pool.connect();

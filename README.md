@@ -21,6 +21,33 @@ Para volver a iniciar: `docker compose --profile full up -d --wait`. Para detene
 
 Durante desarrollo, se puede ejecutar solo la base con `docker compose up -d --wait` y la aplicación con `npm.cmd run dev`. Detené previamente el contenedor app para liberar el puerto 3000. Tras editar fuentes con la app en Docker, reconstruí: `docker compose --profile full up -d --build --wait`.
 
+## Conectar Supabase
+
+En `.env`, completá `SUPABASE_DATABASE_URL` con la URI de **Connect → Direct connection** y `SUPABASE_DB_PASSWORD` con la contraseña de la base. Podés dejar `[YOUR-PASSWORD]` en la URI si pegás la contraseña en el segundo campo: la app la codifica para que los caracteres especiales no rompan la conexión. Usá comillas simples para conservar espacios, `#` y `$` al leer `.env` tanto desde Node como desde Docker Compose.
+
+```dotenv
+SUPABASE_DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.PROJECT_REF.supabase.co:5432/postgres"
+SUPABASE_DB_PASSWORD='TU_PASSWORD'
+SUPABASE_DATABASE_SCHEMA=deluxegames
+SUPABASE_SSL_CA_FILE=
+```
+
+La URI PostgreSQL es distinta de la URL HTTPS del proyecto. No se necesitan claves `anon` ni `service_role`: el servidor mantiene la autenticación y las APIs actuales. El esquema `deluxegames` separa estas tablas de `public` y `auth`; mantenelo fuera de los esquemas expuestos por la Data API.
+
+TLS verifica el certificado y el hostname. Si la conexión requiere la CA del proyecto, descargala desde **Database settings → SSL Configuration**, guardala como `.local/certs/supabase-ca.crt` y completá `SUPABASE_SSL_CA_FILE=.local/certs/supabase-ca.crt`. Esa carpeta está ignorada por Git y montada de solo lectura en Docker. No se desactiva la verificación del servidor.
+
+Después de completar los campos:
+
+```powershell
+docker compose --profile full up -d --build --wait
+```
+
+La app prioriza Supabase cuando `SUPABASE_DATABASE_URL` tiene valor. Si queda vacío, sigue usando Docker local. `DATABASE_URL` y `POSTGRES_PASSWORD` conservan la base local para las pruebas y los datos existentes. No ejecutes `local:setup` para inicializar Supabase.
+
+Al primer arranque sobre una base nueva se crean tablas y el catálogo original. Los registros y credenciales de Docker no se copian automáticamente. Para crear el administrador en Supabase, completá `ADMIN_EMAIL` y `ADMIN_PASSWORD` en `.env` y ejecutá `npm.cmd run admin:create`; retiralos del archivo después del alta. Si necesitás llevar pedidos, clientes y ediciones locales, debe migrarse esa base antes de hacer el cambio de uso.
+
+La conexión directa requiere IPv6 o el complemento IPv4 de Supabase. Si tu red no la alcanza, copiá la URI de **Session pooler** desde Connect; también se admite. El modo Transaction en puerto 6543 no sirve para la configuración de sesión de esta app. [Conexiones y SSL en la documentación oficial de Supabase](https://supabase.com/docs/guides/database/connecting-to-postgres).
+
 ## Operaciones
 
 **Cliente:** registro, login, cierre de sesión, perfil, cambio de contraseña, favoritos asociados a la cuenta, fichas de juego, carrito persistente, pedidos e historial. También se permite comprar como invitado indicando nombre y email.
