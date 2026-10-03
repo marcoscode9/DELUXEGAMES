@@ -415,8 +415,8 @@ Sin esto, estas preventas generan más desconfianza que ventas.
 
 - [ ] Sección de reseñas con al menos 3 reales
 - [ ] Instagram creado + linkeado
-- [ ] Sección "¿Cómo compro?"
-- [ ] Aclaración key/cuenta en cada producto
+- [x] Sección "¿Cómo compro?" ✅ (4 pasos, branch fase-2)
+- [x] Aclaración key/cuenta en cada producto ✅ (pill "Cuenta primaria" en 5 cards + callout en detalle, branch fase-2)
 - [ ] Términos, privacidad, reembolsos, arrepentimiento
 - [ ] Datos del vendedor (CUIT, domicilio) en footer
 - [ ] Disclaimer de preventas con fechas y política de reembolso
