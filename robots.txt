@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://deluxegames.vercel.app/sitemap.xml
