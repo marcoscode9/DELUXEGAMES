@@ -5,7 +5,7 @@ export function configurationError(code,message) {
 // Only fixed codes and messages leave this module; never log driver messages,
 // connection URLs, hostnames, passwords or certificate contents.
 const groups=[
-  ['DG-APP-URL',['CONFIG_APP_URL'],'Configurá APP_URL con la URL pública de la tienda.'],
+  ['DG-APP-URL',['CONFIG_APP_URL'],'Configurá APP_URL con la URL pública completa o habilitá las variables de sistema de Vercel.'],
   ['DG-DB-URL',['CONFIG_DATABASE_URL'],'Configurá SUPABASE_DATABASE_URL con la URI PostgreSQL de Connect.'],
   ['DG-DB-PASSWORD',['CONFIG_DATABASE_PASSWORD'],'Completá SUPABASE_DB_PASSWORD con la contraseña de la base.'],
   ['DG-DB-POOLER',['CONFIG_DATABASE_POOLER'],'Usá Direct connection o Session pooler en puerto 5432.'],
@@ -37,5 +37,5 @@ export function startupDiagnostic(error) {
 }
 
 export function startupEnvironment(env=process.env) {
-  return Object.fromEntries(['APP_URL','SUPABASE_DATABASE_URL','SUPABASE_DB_PASSWORD','DATABASE_URL','SUPABASE_SSL_CA','SUPABASE_SSL_CA_FILE'].map(key=>[key,Boolean(env[key]?.trim())]));
+  return Object.fromEntries(['APP_URL','VERCEL_URL','VERCEL_PROJECT_PRODUCTION_URL','SUPABASE_DATABASE_URL','SUPABASE_DB_PASSWORD','DATABASE_URL','SUPABASE_SSL_CA','SUPABASE_SSL_CA_FILE'].map(key=>[key,Boolean(env[key]?.trim())]));
 }

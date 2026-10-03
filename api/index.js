@@ -1,21 +1,15 @@
 import {attachDatabasePool} from '@vercel/functions';
 import {createApp} from '../server/app.js';
 import {databaseConfig} from '../server/database-config.js';
-import {configurationError,startupDiagnostic,startupEnvironment} from '../server/startup-diagnostics.js';
+import {startupDiagnostic,startupEnvironment} from '../server/startup-diagnostics.js';
+import {resolveAppUrl} from '../server/app-url.js';
 
 let initialization;
 
 // Concurrent requests share startup and the pool; a failed startup can retry.
 export function getApp() {
   if(!initialization)initialization=(async()=>{
-    const appUrl=process.env.VERCEL_ENV==='preview'&&process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}` : process.env.APP_URL;
-    if(process.env.VERCEL&&!appUrl)throw configurationError('CONFIG_APP_URL','Configurá APP_URL con la URL pública de la tienda.');
-    if(appUrl){
-      let parsed;
-      try{parsed=new URL(appUrl);}catch{throw configurationError('CONFIG_APP_URL','APP_URL debe ser una URL completa.');}
-      if(!['https:','http:'].includes(parsed.protocol)||parsed.username||parsed.password)throw configurationError('CONFIG_APP_URL','APP_URL debe ser una URL HTTP o HTTPS sin credenciales.');
-    }
+    const appUrl=resolveAppUrl(process.env,{required:true});
     const app=await createApp({...databaseConfig(),appUrl,poolMax:5,poolIdleTimeout:5000});
     attachDatabasePool(app.db.pool);
     return app;

@@ -26,11 +26,12 @@ test('concurrent cold starts create the schema once and preserve catalog edits',
 
 test('Vercel API entrypoint reports safe startup failures, retries and serves storefront and APIs',{timeout:30000},async(t)=>{
   const schema='vercel_'+randomUUID().replaceAll('-','');
-  const keys=['SUPABASE_DATABASE_URL','SUPABASE_DB_PASSWORD','DATABASE_URL','DATABASE_SCHEMA','PORT','APP_URL','VERCEL','VERCEL_ENV'];
+  const keys=['SUPABASE_DATABASE_URL','SUPABASE_DB_PASSWORD','DATABASE_URL','DATABASE_SCHEMA','PORT','APP_URL','VERCEL','VERCEL_ENV','VERCEL_URL','VERCEL_PROJECT_PRODUCTION_URL'];
   const saved=new Map(keys.map(key=>[key,process.env[key]]));let app,server;
   try{
     process.env.SUPABASE_DATABASE_URL='';process.env.SUPABASE_DB_PASSWORD='';process.env.DATABASE_SCHEMA=schema;
     process.env.PORT='0';process.env.APP_URL='http://localhost';process.env.VERCEL='1';process.env.VERCEL_ENV='production';
+    delete process.env.VERCEL_URL;delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
     const config=JSON.parse(await readFile(new URL('../vercel.json',import.meta.url),'utf8'));
     assert.equal(config.framework,null);
     for(const entry of Object.keys(config.functions))await readFile(new URL('../'+entry,import.meta.url));
@@ -61,6 +62,8 @@ test('Vercel API entrypoint reports safe startup failures, retries and serves st
     assert.ok(logs[1].includes('CONFIG_DATABASE_URL'));assert.ok(logs[1].includes('"DATABASE_URL":false'));
     assert.ok(!logs.join('\n').includes(databaseUrl));
     process.env.DATABASE_URL=databaseUrl;logMock.mock.restore();
+    delete process.env.APP_URL;
+    process.env.VERCEL_PROJECT_PRODUCTION_URL='shop.vercel.app';process.env.VERCEL_URL='shop-build.vercel.app';
     const [home,catalog]=await Promise.all([fetch(base),fetch(base+'/api/products')]);
     const [firstApp,secondApp]=await Promise.all([getApp(),getApp()]);app=firstApp;
     assert.equal(firstApp,secondApp);assert.equal(app.server.listening,false);
@@ -70,9 +73,11 @@ test('Vercel API entrypoint reports safe startup failures, retries and serves st
     for(const path of ['/admin','/cuenta','/assets/deluxegames-mark.svg','/assets/fonts/nunito-latin-variable.woff2','/css/nebula.css','/js/app.js','/gta5.webp'])assert.equal((await fetch(base+path)).status,200,path);
     const favicon=await fetch(base+'/favicon.ico');assert.equal(favicon.status,200);assert.equal(favicon.headers.get('content-type'),'image/svg+xml');
     assert.equal(await favicon.text(),await (await fetch(base+'/assets/deluxegames-mark.svg')).text());
-    const signup=await fetch(base+'/api/register',{method:'POST',headers:{Origin:'http://localhost','Content-Type':'application/json'},body:JSON.stringify({name:'Vercel test',email:'vercel@entrypoint.local',password:'Vercel-test-password-1234'})});
+    const signup=await fetch(base+'/api/register',{method:'POST',headers:{Origin:'https://shop.vercel.app','Content-Type':'application/json'},body:JSON.stringify({name:'Vercel test',email:'vercel@entrypoint.local',password:'Vercel-test-password-1234'})});
+    assert.ok(signup.headers.get('set-cookie').includes('; Secure'));
     assert.equal(signup.status,201);assert.equal((await signup.json()).user.role,'customer');
-    const headers={Origin:'http://localhost','Content-Type':'application/json'};
+    const headers={Origin:'https://shop.vercel.app','Content-Type':'application/json'};
+    assert.equal((await fetch(base+'/api/register',{method:'POST',headers:{...headers,Origin:'https://untrusted.example'},body:'{}'})).status,403);
     const login=await fetch(base+'/api/login',{method:'POST',headers,body:JSON.stringify({email:'vercel@entrypoint.local',password:'Vercel-test-password-1234'})});
     assert.equal(login.status,200);assert.equal((await login.json()).user.role,'customer');
     for(const body of [null,[],42])assert.equal((await fetch(base+'/api/login',{method:'POST',headers,body:JSON.stringify(body)})).status,400);

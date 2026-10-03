@@ -58,13 +58,15 @@ En **Settings → Environment Variables**, para Production:
 
 | Variable | Valor |
 | --- | --- |
-| `APP_URL` | URL HTTPS pública y final de la tienda |
+| `APP_URL` | URL HTTPS pública y final de la tienda; si está vacía, se usa el dominio de Vercel |
 | `SUPABASE_DATABASE_URL` | URI de Connect → Session pooler, puerto 5432 |
 | `SUPABASE_DB_PASSWORD` | Contraseña de la base, sin comillas en el campo de Vercel |
 | `SUPABASE_DATABASE_SCHEMA` | `deluxegames` |
 | `SUPABASE_SSL_CA` | Opcional: contenido PEM completo del certificado raíz descargado de Database settings |
 
 `SUPABASE_SSL_CA` permite validar la CA en Vercel sin apuntar a un archivo de la computadora. Se admiten saltos de línea reales y `\n` literales. En Vercel dejá `SUPABASE_SSL_CA_FILE` sin configurar. TLS mantiene la verificación del servidor; si exige una CA privada, el primer arranque solo funcionará al configurar ese certificado.
+
+Si `APP_URL` está vacía, la función usa `VERCEL_PROJECT_PRODUCTION_URL` y, si falta, `VERCEL_URL`, agregando HTTPS. Los previews usan su `VERCEL_URL`. Esto requiere acceso a las [variables de sistema de Vercel](https://vercel.com/docs/environment-variables/system-environment-variables). Para un dominio elegido explícitamente, completá `APP_URL` con `https://` y sin comillas. Un valor configurado pero inválido sigue dando `DG-APP-URL`; no se reemplaza silenciosamente. El origen para login y operaciones se obtiene de esas variables, nunca de headers enviados por el visitante. Abrí la tienda en su dominio de producción para realizar operaciones.
 
 El esquema, tablas y cinco productos originales se inicializan al arrancar la función antes de responder solicitudes. Un bloqueo transaccional serializa los arranques simultáneos, incluyendo la creación del esquema. Los siguientes arranques conservan productos editados, usuarios, stock y pedidos. Esto no migra la base local.
 
