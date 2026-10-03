@@ -24,9 +24,9 @@ test('concurrent cold starts create the schema once and preserve catalog edits',
   }finally{await a.close();await b.close();await removeSchema(schema);}
 });
 
-test('Vercel API entrypoint initializes once and serves storefront, assets and streamed or parsed JSON',{timeout:30000},async()=>{
+test('Vercel API entrypoint reports safe startup failures, retries and serves storefront and APIs',{timeout:30000},async(t)=>{
   const schema='vercel_'+randomUUID().replaceAll('-','');
-  const keys=['SUPABASE_DATABASE_URL','SUPABASE_DB_PASSWORD','DATABASE_SCHEMA','PORT','APP_URL','VERCEL','VERCEL_ENV'];
+  const keys=['SUPABASE_DATABASE_URL','SUPABASE_DB_PASSWORD','DATABASE_URL','DATABASE_SCHEMA','PORT','APP_URL','VERCEL','VERCEL_ENV'];
   const saved=new Map(keys.map(key=>[key,process.env[key]]));let app,server;
   try{
     process.env.SUPABASE_DATABASE_URL='';process.env.SUPABASE_DB_PASSWORD='';process.env.DATABASE_SCHEMA=schema;
@@ -46,6 +46,21 @@ test('Vercel API entrypoint initializes once and serves storefront, assets and s
     });
     server.listen(0,'127.0.0.1');await once(server,'listening');
     const base=`http://127.0.0.1:${server.address().port}`;
+    const logs=[];const logMock=t.mock.method(console,'error',(...args)=>logs.push(args.join(' ')));
+    delete process.env.APP_URL;
+    const missingAppUrl=await fetch(base);
+    assert.equal(missingAppUrl.status,503);assert.equal(missingAppUrl.headers.get('cache-control'),'no-store');
+    assert.equal((await missingAppUrl.json()).reference,'DG-APP-URL');
+    process.env.APP_URL='http://localhost';
+    const databaseUrl=process.env.DATABASE_URL;delete process.env.DATABASE_URL;
+    const missingDatabase=await fetch(base+'/api/products');
+    assert.equal(missingDatabase.status,503);
+    const failure=await missingDatabase.json();assert.equal(failure.reference,'DG-DB-URL');
+    assert.deepEqual(Object.keys(failure).sort(),['error','reference']);
+    assert.ok(!JSON.stringify(failure).includes(databaseUrl));
+    assert.ok(logs[1].includes('CONFIG_DATABASE_URL'));assert.ok(logs[1].includes('"DATABASE_URL":false'));
+    assert.ok(!logs.join('\n').includes(databaseUrl));
+    process.env.DATABASE_URL=databaseUrl;logMock.mock.restore();
     const [home,catalog]=await Promise.all([fetch(base),fetch(base+'/api/products')]);
     const [firstApp,secondApp]=await Promise.all([getApp(),getApp()]);app=firstApp;
     assert.equal(firstApp,secondApp);assert.equal(app.server.listening,false);
@@ -53,6 +68,8 @@ test('Vercel API entrypoint initializes once and serves storefront, assets and s
     const html=await home.text();assert.ok(html.includes('God of War Ragnarök'));assert.ok(html.includes('/js/app.js?v='));
     assert.equal((await catalog.json()).products.length,5);
     for(const path of ['/admin','/cuenta','/assets/deluxegames-mark.svg','/assets/fonts/nunito-latin-variable.woff2','/css/nebula.css','/js/app.js','/gta5.webp'])assert.equal((await fetch(base+path)).status,200,path);
+    const favicon=await fetch(base+'/favicon.ico');assert.equal(favicon.status,200);assert.equal(favicon.headers.get('content-type'),'image/svg+xml');
+    assert.equal(await favicon.text(),await (await fetch(base+'/assets/deluxegames-mark.svg')).text());
     const signup=await fetch(base+'/api/register',{method:'POST',headers:{Origin:'http://localhost','Content-Type':'application/json'},body:JSON.stringify({name:'Vercel test',email:'vercel@entrypoint.local',password:'Vercel-test-password-1234'})});
     assert.equal(signup.status,201);assert.equal((await signup.json()).user.role,'customer');
     const headers={Origin:'http://localhost','Content-Type':'application/json'};

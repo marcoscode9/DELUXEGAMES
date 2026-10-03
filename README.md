@@ -72,6 +72,21 @@ El administrador de Docker no existe automáticamente en una base Supabase nueva
 
 Antes de dar el despliegue por validado, verificá `/api/products`, `/admin` y el login. La conectividad y el certificado reales de Supabase necesitan comprobarse en el primer despliegue; las pruebas locales usan una base separada.
 
+Si el arranque falla, la respuesta 503 muestra una `reference` sin datos privados. La persona que abre la tienda puede compartir ese código aunque no tenga acceso a Vercel. El log de ejecución `Application startup failed:` agrega un diagnóstico fijo y solo indica cuáles variables están presentes, sin imprimir sus valores. Los logs de build no contienen los errores de ejecución.
+
+| Referencia | Qué revisar en Vercel / Supabase |
+| --- | --- |
+| `DG-APP-URL` | `APP_URL`: URL completa y pública de la tienda |
+| `DG-DB-URL` | `SUPABASE_DATABASE_URL`: URI PostgreSQL, no URL HTTPS ni localhost |
+| `DG-DB-PASSWORD` / `DG-DB-AUTH` | Contraseña y usuario de PostgreSQL, incluyendo el sufijo del usuario del pooler |
+| `DG-DB-POOLER` / `DG-DB-NETWORK` | Session pooler en 5432 y disponibilidad de la base; la conexión directa puede requerir IPv6 |
+| `DG-TLS-CA` / `DG-TLS-FILE` | PEM en `SUPABASE_SSL_CA`; eliminar rutas locales de `SUPABASE_SSL_CA_FILE` |
+| `DG-DB-SCHEMA` / `DG-DB-PERMISSIONS` | Nombre del esquema y permisos para crear tablas |
+| `DG-DB-DNS` / `DG-DB-LIMIT` | Hostname de Connect y límite de conexiones |
+| `DG-ASSETS` / `DG-TLS-SERVER` / `DG-STARTUP` | Revisión del paquete o de los logs de ejecución por quien administra el deployment |
+
+Las variables deben estar configuradas para el entorno del deployment usado (Production o Preview). Cambiar variables requiere un nuevo deployment. Estos diagnósticos ayudan a identificar el fallo; no prueban una conexión real con Supabase.
+
 Referencias: [funciones Node en Vercel](https://vercel.com/docs/functions/runtimes/node-js#create-a-nodejs-function-in-api), [pool de conexiones en Fluid Compute](https://vercel.com/kb/guide/connection-pooling-with-functions).
 
 ## Operaciones

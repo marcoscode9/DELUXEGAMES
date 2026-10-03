@@ -200,6 +200,7 @@ export async function createApp(options={}) {
       if(!['GET','HEAD'].includes(method))fail(405,'Método no permitido.');
       let file;
       if(['/', '/cuenta', '/admin'].includes(route))file=path.join(root,'index.html');
+      else if(route==='/favicon.ico')file=path.join(root,'public','assets','deluxegames-mark.svg');
       else if(/^\/(?:assets|css|js)\/[a-zA-Z0-9_./-]+$/.test(route)&&!route.includes('..'))file=path.join(root,'public',route);
       else if(/^\/(?:gta5\.webp|gta6\.webp|fc26\.webp|fc27\.webp|gow-ragnarok\.webp|og-image\.jpg|favicon-32x32\.png|apple-touch-icon\.png|robots\.txt|sitemap\.xml)$/.test(route))file=path.join(root,route);
       else fail(404,'Página no encontrada.');

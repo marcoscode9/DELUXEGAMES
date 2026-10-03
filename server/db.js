@@ -1,9 +1,10 @@
 import pg from 'pg';
 import { readFile } from 'node:fs/promises';
+import {configurationError} from './startup-diagnostics.js';
 
 export function createDatabase(connectionString, schema = 'public', ssl, {max=10,idleTimeoutMillis=10000}={}) {
-  if (!connectionString) throw new Error('Falta DATABASE_URL. Ejecutá npm run local:setup.');
-  if (!/^[a-z][a-z0-9_]*$/.test(schema)) throw new Error('Invalid database schema');
+  if (!connectionString) throw configurationError('CONFIG_DATABASE_URL','Falta la conexión PostgreSQL. Configurá SUPABASE_DATABASE_URL o DATABASE_URL.');
+  if (!/^[a-z][a-z0-9_]*$/.test(schema)) throw configurationError('CONFIG_DATABASE_SCHEMA','Invalid database schema');
   const pool = new pg.Pool({ connectionString, max, idleTimeoutMillis, connectionTimeoutMillis:10000, options: `-c search_path=${schema}`, ...(ssl?{ssl}:{}) });
   pool.on('error',error=>console.error('Database idle connection failed:',error.code||error.name));
   const query = (sql, values) => pool.query(sql, values);
