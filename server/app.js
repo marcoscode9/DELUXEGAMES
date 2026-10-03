@@ -41,7 +41,7 @@ export async function createApp(options={}) {
   const assetVersion=hash.digest('hex').slice(0,12);
   const appUrl=options.appUrl||process.env.APP_URL||'http://localhost:3000';
   const origin=new URL(appUrl).origin, secure=origin.startsWith('https:');
-  const db=createDatabase(options.databaseUrl||process.env.DATABASE_URL,options.schema||process.env.DATABASE_SCHEMA||'public',options.ssl);
+  const db=createDatabase(options.databaseUrl||process.env.DATABASE_URL,options.schema||process.env.DATABASE_SCHEMA||'public',options.ssl,{max:options.poolMax||10,idleTimeoutMillis:options.poolIdleTimeout||10000});
   try {await db.initialize();}catch(error){await db.close();throw error;}
   // Avoid a fast timing distinction between nonexistent accounts and wrong passwords.
   const dummyHash=await passwordHash(randomBytes(32).toString('hex'));

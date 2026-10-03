@@ -1,0 +1,46 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+import {once} from 'node:events';
+import pg from 'pg';
+import {createDatabase} from '../server/db.js';
+
+async function removeSchema(schema){
+  const pool=new pg.Pool({connectionString:process.env.DATABASE_URL});
+  try{await pool.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);}finally{await pool.end();}
+}
+
+test('concurrent cold starts create the schema once and preserve catalog edits',async()=>{
+  const schema='cold_'+randomUUID().replaceAll('-','');
+  const a=createDatabase(process.env.DATABASE_URL,schema),b=createDatabase(process.env.DATABASE_URL,schema);
+  try{
+    await Promise.all([a.initialize(),b.initialize()]);
+    assert.equal(Number((await a.query('SELECT count(*) FROM products')).rows[0].count),5);
+    await a.query("UPDATE products SET data=jsonb_set(data,'{price}','12345') WHERE id='gta5'");
+    await Promise.all([a.initialize(),b.initialize()]);
+    assert.equal((await b.query("SELECT data FROM products WHERE id='gta5'")).rows[0].data.price,12345);
+  }finally{await a.close();await b.close();await removeSchema(schema);}
+});
+
+test('Vercel root entrypoint initializes a fresh database and serves storefront, assets and APIs',{timeout:30000},async()=>{
+  const schema='vercel_'+randomUUID().replaceAll('-','');
+  const keys=['SUPABASE_DATABASE_URL','SUPABASE_DB_PASSWORD','DATABASE_SCHEMA','PORT','APP_URL','VERCEL','VERCEL_ENV'];
+  const saved=new Map(keys.map(key=>[key,process.env[key]]));let app;
+  try{
+    process.env.SUPABASE_DATABASE_URL='';process.env.SUPABASE_DB_PASSWORD='';process.env.DATABASE_SCHEMA=schema;
+    process.env.PORT='0';process.env.APP_URL='http://localhost';process.env.VERCEL='1';process.env.VERCEL_ENV='production';
+    ({app}=await import('../server.js'));
+    if(!app.server.listening)await once(app.server,'listening');
+    const base=`http://127.0.0.1:${app.server.address().port}`;
+    assert.equal(app.db.pool.options.max,5);assert.equal(app.db.pool.options.idleTimeoutMillis,5000);
+    const html=await (await fetch(base)).text();assert.ok(html.includes('God of War Ragnarök'));assert.ok(html.includes('/js/app.js?v='));
+    assert.equal((await (await fetch(base+'/api/products')).json()).products.length,5);
+    for(const path of ['/admin','/cuenta','/assets/deluxegames-mark.svg','/assets/fonts/nunito-latin-variable.woff2','/css/nebula.css','/js/app.js','/gta5.webp'])assert.equal((await fetch(base+path)).status,200,path);
+    const signup=await fetch(base+'/api/register',{method:'POST',headers:{Origin:'http://localhost','Content-Type':'application/json'},body:JSON.stringify({name:'Vercel test',email:'vercel@entrypoint.local',password:'Vercel-test-password-1234'})});
+    assert.equal(signup.status,201);assert.equal((await signup.json()).user.role,'customer');
+    assert.equal((await fetch(base+'/.env')).status,404);
+  }finally{
+    await app?.close();await removeSchema(schema);
+    for(const [key,value]of saved){if(value===undefined)delete process.env[key];else process.env[key]=value;}
+  }
+});

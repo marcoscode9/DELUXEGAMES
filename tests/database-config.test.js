@@ -17,3 +17,8 @@ test('Supabase accepts a complete URI but refuses missing credentials and transa
   assert.throws(()=>databaseConfig({SUPABASE_DATABASE_URL:'https://example.supabase.co'}),/PostgreSQL/);
   assert.throws(()=>databaseConfig({SUPABASE_DATABASE_URL:'postgresql://postgres:filled@pool.example:6543/postgres'}),/Session pooler/);
 });
+test('Vercel can receive the verified TLS root certificate as an environment value',()=>{
+  const config=databaseConfig({SUPABASE_DATABASE_URL:'postgresql://postgres:filled@db.example.supabase.co:5432/postgres',SUPABASE_SSL_CA:'-----BEGIN CERTIFICATE-----\\nexample\\n-----END CERTIFICATE-----',SUPABASE_SSL_CA_FILE:'this-local-path-is-not-deployed.crt'});
+  assert.equal(config.ssl.ca,'-----BEGIN CERTIFICATE-----\nexample\n-----END CERTIFICATE-----');
+  assert.equal(config.ssl.rejectUnauthorized,true);
+});

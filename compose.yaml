@@ -14,6 +14,7 @@ services:
       SUPABASE_DB_PASSWORD: ${SUPABASE_DB_PASSWORD:-}
       SUPABASE_DATABASE_SCHEMA: ${SUPABASE_DATABASE_SCHEMA:-deluxegames}
       SUPABASE_SSL_CA_FILE: ${SUPABASE_SSL_CA_FILE:-}
+      SUPABASE_SSL_CA: ${SUPABASE_SSL_CA:-}
     volumes:
       - ./.local/certs:/app/.local/certs:ro
     ports:

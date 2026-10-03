@@ -48,6 +48,32 @@ Al primer arranque sobre una base nueva se crean tablas y el catálogo original.
 
 La conexión directa requiere IPv6 o el complemento IPv4 de Supabase. Si tu red no la alcanza, copiá la URI de **Session pooler** desde Connect; también se admite. El modo Transaction en puerto 6543 no sirve para la configuración de sesión de esta app. [Conexiones y SSL en la documentación oficial de Supabase](https://supabase.com/docs/guides/database/connecting-to-postgres).
 
+## Desplegar en Vercel
+
+La entrada `server.js` y `vercel.json` configuran el backend HTTP completo en Vercel con Node 24 y Fluid Compute. Se incluyen SQL, catálogo, HTML, CSS, módulos y recursos en la función. La carpeta privada `.local` y los `.env` quedan fuera del despliegue. Las conexiones PostgreSQL se reutilizan con un pool de hasta cinco conexiones y el helper oficial `attachDatabasePool`.
+
+Desplegá el commit más reciente de `fase-2-componentes` **como Production**. Redeploy de un deployment viejo vuelve a construir el commit de ese deployment: no incorpora automáticamente commits locales o de otra rama. El commit debe estar en GitHub antes de seleccionarlo en Vercel. El framework Node y la instalación están definidos en `vercel.json`; desactivá cualquier override anterior de Output Directory para que no se publique solo el HTML estático.
+
+En **Settings → Environment Variables**, para Production:
+
+| Variable | Valor |
+| --- | --- |
+| `APP_URL` | URL HTTPS pública y final de la tienda |
+| `SUPABASE_DATABASE_URL` | URI de Connect → Session pooler, puerto 5432 |
+| `SUPABASE_DB_PASSWORD` | Contraseña de la base, sin comillas en el campo de Vercel |
+| `SUPABASE_DATABASE_SCHEMA` | `deluxegames` |
+| `SUPABASE_SSL_CA` | Opcional: contenido PEM completo del certificado raíz descargado de Database settings |
+
+`SUPABASE_SSL_CA` permite validar la CA en Vercel sin apuntar a un archivo de la computadora. Se admiten saltos de línea reales y `\n` literales. En Vercel dejá `SUPABASE_SSL_CA_FILE` sin configurar. TLS mantiene la verificación del servidor; si exige una CA privada, el primer arranque solo funcionará al configurar ese certificado.
+
+El esquema, tablas y cinco productos originales se inicializan al arrancar la función antes de responder solicitudes. Un bloqueo transaccional serializa los arranques simultáneos, incluyendo la creación del esquema. Los siguientes arranques conservan productos editados, usuarios, stock y pedidos. Esto no migra la base local.
+
+El administrador de Docker no existe automáticamente en una base Supabase nueva. Para darlo de alta, completá las mismas variables Supabase y `ADMIN_EMAIL` / `ADMIN_PASSWORD` en el `.env` local, ejecutá `npm.cmd run admin:create` y retiralas después. Vercel no necesita esas dos variables para operar la tienda. No hay una cuenta predeterminada ni contraseñas embebidas en el deploy.
+
+Antes de dar el despliegue por validado, verificá `/api/products`, `/admin` y el login. La conectividad y el certificado reales de Supabase necesitan comprobarse en el primer despliegue; las pruebas locales usan una base separada.
+
+Referencias: [servidores Node en Vercel](https://vercel.com/docs/functions/runtimes/node-js#deploy-a-nodejs-server), [pool de conexiones en Fluid Compute](https://vercel.com/kb/guide/connection-pooling-with-functions).
+
 ## Operaciones
 
 **Cliente:** registro, login, cierre de sesión, perfil, cambio de contraseña, favoritos asociados a la cuenta, fichas de juego, carrito persistente, pedidos e historial. También se permite comprar como invitado indicando nombre y email.

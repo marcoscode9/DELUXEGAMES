@@ -13,6 +13,7 @@ export function databaseConfig(env=process.env) {
   // pg lets URI SSL parameters override the TLS object. Keep verification explicit.
   for(const key of ['ssl','sslmode','sslrootcert','sslcert','sslkey','uselibpqcompat'])url.searchParams.delete(key);
   const ssl={rejectUnauthorized:true};
-  if(env.SUPABASE_SSL_CA_FILE?.trim())ssl.ca=readFileSync(env.SUPABASE_SSL_CA_FILE.trim(),'utf8');
+  if(env.SUPABASE_SSL_CA?.trim())ssl.ca=env.SUPABASE_SSL_CA.trim().replace(/\\n/g,'\n');
+  else if(env.SUPABASE_SSL_CA_FILE?.trim())ssl.ca=readFileSync(env.SUPABASE_SSL_CA_FILE.trim(),'utf8');
   return {databaseUrl:url.href,schema:env.SUPABASE_DATABASE_SCHEMA||'deluxegames',ssl};
 }

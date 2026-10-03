@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "node",
+  "buildCommand": "",
+  "installCommand": "npm ci",
+  "fluid": true,
+  "functions": {
+    "server.js": {
+      "maxDuration": 30,
+      "includeFiles": "{index.html,server/schema.sql,data/**,public/**,*.webp,*.png,og-image.jpg,robots.txt,sitemap.xml}"
+    }
+  }
+}

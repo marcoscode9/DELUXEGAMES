@@ -1,10 +1,11 @@
 import pg from 'pg';
 import { readFile } from 'node:fs/promises';
 
-export function createDatabase(connectionString, schema = 'public', ssl) {
+export function createDatabase(connectionString, schema = 'public', ssl, {max=10,idleTimeoutMillis=10000}={}) {
   if (!connectionString) throw new Error('Falta DATABASE_URL. Ejecutá npm run local:setup.');
   if (!/^[a-z][a-z0-9_]*$/.test(schema)) throw new Error('Invalid database schema');
-  const pool = new pg.Pool({ connectionString, max: 10, connectionTimeoutMillis:10000, options: `-c search_path=${schema}`, ...(ssl?{ssl}:{}) });
+  const pool = new pg.Pool({ connectionString, max, idleTimeoutMillis, connectionTimeoutMillis:10000, options: `-c search_path=${schema}`, ...(ssl?{ssl}:{}) });
+  pool.on('error',error=>console.error('Database idle connection failed:',error.code||error.name));
   const query = (sql, values) => pool.query(sql, values);
   const tx = async work => {
     const client = await pool.connect();
@@ -13,10 +14,10 @@ export function createDatabase(connectionString, schema = 'public', ssl) {
     finally { client.release(); }
   };
   async function initialize() {
-    await query(`CREATE SCHEMA IF NOT EXISTS "${schema}"`);
     await tx(async client => {
       // Prevent simultaneous application starts from racing schema/seed initialization.
       await client.query('SELECT pg_advisory_xact_lock(837425)');
+      await client.query(`CREATE SCHEMA IF NOT EXISTS "${schema}"`);
       await client.query(await readFile(new URL('./schema.sql', import.meta.url), 'utf8'));
       const seeded = await client.query("SELECT value FROM settings WHERE key='seeded'");
       if (!seeded.rowCount) {
@@ -26,5 +27,5 @@ export function createDatabase(connectionString, schema = 'public', ssl) {
       }
     });
   }
-  return { query, tx, initialize, close: () => pool.end() };
+  return { pool, query, tx, initialize, close: () => pool.end() };
 }
