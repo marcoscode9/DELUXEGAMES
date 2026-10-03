@@ -1,5 +1,9 @@
 # Auditoría E-Commerce — DELUXEGAMES
 
+> **Nueva etapa 2026-10-03:** el usuario solicitó reemplazar la tienda estática por un ecommerce completo con cuentas y administración local en Docker. [REDISENO-2026-10-03.md](REDISENO-2026-10-03.md) y el [README](../README.md) documentan la implementación actual. La auditoría y su plan original se conservan como antecedentes.
+
+> **Continuación 2026-10-02:** se implementó la renovación UI y el lote de FAQ, filtros, favoritos, preventas y carrito accesible. Ver [MEJORAS-UI.md](MEJORAS-UI.md) para alcance, verificaciones y pendientes. Los checklists históricos de abajo conservan el estado de sus fases originales; términos/datos comerciales, reseñas reales y analytics siguen pendientes.
+
 **URL auditada:** https://deluxegames.vercel.app/
 **Fecha:** 2026-10-02
 **Tipo de sitio:** Single-page estático (HTML + CSS + JS inline) deployado en Vercel

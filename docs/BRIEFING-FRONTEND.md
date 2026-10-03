@@ -1,5 +1,7 @@
 # Briefing Frontend — DELUXEGAMES
 
+> **Histórico:** la solicitud explícita del 2026-10-03 reemplaza la restricción de un solo HTML y la estética violeta por el rediseño completo con backend local, clientes y administración. Ver [REDISENO-2026-10-03.md](REDISENO-2026-10-03.md).
+
 **Documento de trabajo para el encargado de frontend.**
 **Emitido por:** Auditoría / Dirección de producto
 **Fecha:** 2026-10-02
