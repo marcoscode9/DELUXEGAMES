@@ -1,0 +1,23 @@
+{
+  "name": "deluxegames",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server/index.js",
+    "dev": "node --env-file-if-exists=.env --watch server/index.js",
+    "local:setup": "node tools/setup-local.js",
+    "admin:create": "node --env-file-if-exists=.env tools/create-admin.js",
+    "test": "node --env-file-if-exists=.env --test tests/*.test.js"
+  },
+  "dependencies": {
+    "@vercel/functions": "^3.9.11",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}

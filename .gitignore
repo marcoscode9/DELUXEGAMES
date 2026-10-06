@@ -1,0 +1,8 @@
+docs/previews/
+node_modules/
+.env
+.env.*
+!.env.example
+.local/
+.vercel/
+coverage/
