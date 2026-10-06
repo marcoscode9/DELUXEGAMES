@@ -47,12 +47,18 @@ export function initializeAdmin(){
     const archive=ev.target.closest('[data-archive]');if(archive){const p=data.products.find(p=>p.id===archive.dataset.archive);$('#confirmError').textContent='';$('#confirmAction').onclick=async()=>{try{await api(`/admin/products/${p.id}`,{method:'DELETE',body:{version:p.version}});closeDialog('confirmDialog');toast('Publicación archivada.');await refresh();}catch(e){$('#confirmError').textContent=e.message;}};openDialog('confirmDialog');}
     const save=ev.target.closest('[data-save-order]');if(save){save.disabled=true;try{const id=save.dataset.saveOrder,previous=data.orders.find(order=>order.id===id)?.status;const result=await api(`/admin/orders/${id}`,{method:'PATCH',body:{status:document.querySelector(`[data-status="${id}"]`).value,note:document.querySelector(`[data-note="${id}"]`).value}});toast('Pedido actualizado.');await refresh();if(previous!==result.order.status&&['confirmed','delivered'].includes(result.order.status))showOrderFeedback(result.order,result.order.status);}catch(e){toast(e.message);}finally{save.disabled=false;}}
   });
-  $('#productForm').onsubmit=ev=>{ev.preventDefault();busyForm(ev.target,'#productFormError',async()=>{const f=new FormData(ev.target),body=Object.fromEntries(f);body.platforms=f.getAll('platforms');body.price=Number(body.price);body.stock=body.stock===''?null:Number(body.stock);for(const k of ['preorder','featured','active'])body[k]=f.has(k);if(editing)body.version=editing.version;await api(`/admin/products${editing?'/'+editing.id:''}`,{method:editing?'PATCH':'POST',body});closeDialog('editorDialog');toast('Publicación guardada.');await refresh();});};
+  $('#productForm').onsubmit=ev=>{ev.preventDefault();busyForm(ev.target,'#productFormError',async()=>{const f=new FormData(ev.target),body=Object.fromEntries(f);if(!body.image)throw new Error('Subí una imagen o pegá una URL.');body.platforms=f.getAll('platforms');body.price=Number(body.price);body.stock=body.stock===''?null:Number(body.stock);for(const k of ['preorder','featured','active'])body[k]=f.has(k);if(editing)body.version=editing.version;await api(`/admin/products${editing?'/'+editing.id:''}`,{method:editing?'PATCH':'POST',body});closeDialog('editorDialog');toast('Publicación guardada.');await refresh();});};
   $('#stockForm').onsubmit=ev=>{ev.preventDefault();busyForm(ev.target,'#stockFormError',async()=>{const b=Object.fromEntries(new FormData(ev.target));b.delta=Number(b.delta);b.version=stockProduct.version;await api(`/admin/products/${stockProduct.id}/stock`,{method:'POST',body:b});closeDialog('stockDialog');toast('Movimiento de stock registrado.');await refresh();});};
-  $('#imageUpload').onchange=async ev=>{
-    const file=ev.target.files[0];if(!file)return;
+  const uploadImage=async file=>{
+    if(!file)return;if(!/^image\/(jpeg|png|webp)$/.test(file.type)){$('#uploadStatus').textContent='Formato no soportado: usá JPG, PNG o WebP.';return;}
     if(file.size>2*1024*1024){$('#uploadStatus').textContent='La imagen supera los 2 MB.';return;}
     $('#uploadStatus').textContent='Subiendo imagen…';const save=$('#productForm button[type=submit]');save.disabled=true;
     try{const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result.split(',')[1]);reader.onerror=reject;reader.readAsDataURL(file);});const r=await api('/admin/media',{method:'POST',body:{mime:file.type,data}});$('#productForm [name=image]').value=r.url;$('#uploadStatus').textContent='Imagen guardada. Se asociará al guardar la publicación.';}catch(e){$('#uploadStatus').textContent=e.message;}finally{save.disabled=false;}
   };
+  $('#imageUpload').onchange=ev=>uploadImage(ev.target.files[0]);
+  const drop=$('#imageDrop');
+  ['dragenter','dragover'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('dragging');}));
+  ['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('dragging');}));
+  drop.addEventListener('drop',e=>uploadImage(e.dataTransfer.files[0]));
+  drop.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('#imageUpload').click();}});
 }
