@@ -309,3 +309,53 @@ form .form-error { color:#ffb6aa; }
 @media(prefers-reduced-motion:reduce) {
   .hero-game:hover,.button:hover { translate:none; }.product-card:hover .card-image-button>img { transform:none; }
 }
+
+/* Reseñas: prueba social de clientes (Instagram / WhatsApp). */
+.reviews { padding-bottom:30px; }
+.reviews-top { display:flex;align-items:center;flex-wrap:wrap;gap:14px 28px;margin-bottom:24px; }
+.reviews-score { display:flex;align-items:center;gap:12px; }
+.reviews-score strong { font-size:34px;font-weight:800;letter-spacing:-.04em;line-height:1; }
+.reviews-count { font-size:12px;color:var(--muted); }
+.review-stars { display:inline-flex;gap:2px; }
+.star { position:relative;display:inline-block;width:16px;height:16px; }
+.star svg { position:absolute;inset:0;width:16px;height:16px;fill:#ffffff1f;stroke:#ffffff33;stroke-width:1.2;stroke-linejoin:round; }
+.star .star-fill { fill:#ffc94d;stroke:#ffc94d; }
+.reviews[hidden],.review-filters[hidden],[data-reviews-link][hidden] { display:none !important; }
+.trust-points { list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:10px; }
+.trust-points li { display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid #bf8bff3d;border-radius:30px;background:#bf8bff0d;font-size:12px;font-weight:700;color:var(--ink); }
+.trust-points svg { width:15px;height:15px;fill:none;stroke:var(--accent);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;flex:none; }
+.review-filters { display:flex;gap:8px;margin-bottom:18px;overflow-x:auto;scrollbar-width:none; }.review-filters::-webkit-scrollbar { display:none; }
+.review-filters button { flex:none;padding:8px 15px;border:1px solid var(--line);border-radius:30px;background:transparent;color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;transition:color 200ms,background 200ms,border-color 200ms; }
+.review-filters button:hover { color:var(--ink);border-color:#bf8bff55; }
+.review-filters button[aria-pressed=true] { color:#fff;background:linear-gradient(110deg,#9133df,#7816c5);border-color:#ac58ec70; }
+.reviews-track { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;outline:none; }
+.review-card { margin:0;display:flex;flex-direction:column;gap:14px;padding:22px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(135deg,#2c233777,#1c172477);transition:border-color 300ms,translate 400ms var(--ease-premium),box-shadow 400ms; }
+.review-card:hover { border-color:#bf8bff55;translate:0 -3px;box-shadow:0 14px 34px #7816c522; }
+.review-card blockquote { margin:0;flex:1; }
+.review-card blockquote p { font-size:14px;line-height:1.7;color:var(--ink); }
+.review-card figcaption { display:flex;align-items:center;gap:12px;padding-top:14px;border-top:1px solid var(--line); }
+.review-avatar { flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#9133df,#5b1c93);font-size:12px;font-weight:800;color:#fff;box-shadow:inset 0 1px 0 #ffffff30; }
+.review-person { display:grid;line-height:1.35;min-width:0; }
+.review-person b { font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis; }
+.review-person small { font-size:11px;color:var(--accent); }
+.reviews-more { display:flex;justify-content:center;margin-top:22px; }.reviews-more:has(button[hidden]) { display:none; }
+.reviews-more .button { background:transparent;box-shadow:none; }
+.review-cta { display:flex;align-items:center;justify-content:space-between;gap:24px;margin-top:22px;padding:26px 28px;border:1px solid #ffffff25;border-radius:20px;background:radial-gradient(ellipse at 100% 120%,#71359955,transparent 65%),#1c1524; }
+.review-cta h3 { font-size:20px;font-weight:800; }
+.review-cta p { margin-top:4px;font-size:13px;color:var(--muted); }
+.review-cta .button { flex:none; }
+@media(max-width:1000px) { .reviews-track { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:760px) {
+  .reviews { padding-bottom:20px; }
+  .reviews-top { gap:12px;margin-bottom:18px; }.reviews-score strong { font-size:28px; }
+  .trust-points { flex-wrap:nowrap;overflow-x:auto;margin-inline:-16px;padding-inline:16px;scrollbar-width:none; }.trust-points::-webkit-scrollbar { display:none; }
+  .trust-points li { flex:none;font-size:11px;padding:7px 12px; }
+  .review-filters { margin-inline:-16px;padding-inline:16px; }.review-filters button { font-size:11px;padding:7px 13px; }
+  .reviews-track { display:flex;overflow-x:auto;scroll-snap-type:x mandatory;margin-inline:-16px;padding:2px 16px 14px;scroll-padding-inline:16px;scrollbar-width:none; }.reviews-track::-webkit-scrollbar { display:none; }
+  .reviews-track:focus-visible { outline:2px solid var(--accent);outline-offset:-2px;border-radius:16px; }
+  .review-card { flex:0 0 84%;scroll-snap-align:start;padding:19px; }.review-card blockquote p { font-size:13px; }
+  .reviews-more { margin-top:8px; }
+  .review-cta { flex-direction:column;align-items:stretch;text-align:center;padding:22px 18px;gap:18px; }.review-cta h3 { font-size:18px; }.review-cta p { font-size:12px; }
+  .review-cta .button { justify-content:center;font-size:12px;min-height:44px; }
+}
+@media(prefers-reduced-motion:reduce) { .review-card:hover { translate:none; } }
