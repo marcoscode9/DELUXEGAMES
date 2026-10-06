@@ -43,7 +43,7 @@ export function reveal(element, delay = 0) {
 
 export function observeReveals(root = document) {
   if (!initialized || preference.matches || !observer) return;
-  root.querySelectorAll('.section-heading, .product-card, .editorial-copy > *, .steps > li, .faq > div:first-child, .faq-list details, .closing > *, .footer-top > div, .page-heading, .stat, .order-card').forEach(element => {
+  root.querySelectorAll('.section-heading, .product-card, .editorial-copy > *, .steps > li, .trust-points, .review-card, .review-cta, .faq > div:first-child, .faq-list details, .closing > *, .footer-top > div, .page-heading, .stat, .order-card').forEach(element => {
     if (!revealed.has(element)) observer.observe(element);
   });
 }

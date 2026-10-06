@@ -6,6 +6,7 @@ import pg from 'pg';
 import {chromium} from 'playwright';
 import {createApp} from '../server/app.js';
 import {bootstrapAdmin} from '../server/auth.js';
+import {reviews} from '../public/js/reviews-data.js';
 
 test('buyer and administrator workflows on desktop and mobile',{timeout:120000},async()=>{
   const schema='ui_'+randomUUID().replaceAll('-',''),base='http://localhost:3198';
@@ -19,6 +20,7 @@ test('buyer and administrator workflows on desktop and mobile',{timeout:120000},
     const ready=async()=>{await page.waitForSelector('body[data-ready=true]');await page.evaluate(()=>document.fonts.ready);};
     const imageReady=async()=>{await page.evaluate(async()=>{const imgs=[...document.querySelectorAll('img')];imgs.forEach(i=>i.loading='eager');await Promise.all(imgs.map(i=>i.decode().catch(()=>{})));});};
     await page.goto(base);await ready();assert.equal(await page.locator('.product-card').count(),5);
+    const hasReviews=reviews.length>0;assert.equal(await page.locator('#resenas').isVisible(),hasReviews,'Reviews section is visible only when real reviews exist');assert.equal(await page.locator('#resenas .review-card').count(),Math.min(reviews.length,6));assert.equal(await page.locator('.desktop-nav a[href="/#resenas"]').isVisible(),hasReviews);
     assert.ok(await page.evaluate(()=>document.fonts.check('800 24px Nunito','¿Cómo jugás? ñ')));
     assert.equal(await page.locator('.site-header .brand-mark').evaluate(el=>el.naturalWidth>0),true);
     await imageReady();await page.screenshot({path:'.local/previews/desktop.png',fullPage:true});
